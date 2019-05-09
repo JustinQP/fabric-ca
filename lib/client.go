@@ -203,6 +203,9 @@ func (c *Client) GenCSR(req *api.CSRInfo, id string) ([]byte, bccsp.Key, error) 
 	cr := c.newCertificateRequest(req)
 	cr.CN = id
 
+        fmt.Println("*************************************")
+	fmt.Printf("req: %+v\n", req)
+	
 	if (cr.KeyRequest == nil) || (cr.KeyRequest.Size() == 0 && cr.KeyRequest.Algo() == "") {
 		cr.KeyRequest = newCfsslBasicKeyRequest(api.NewBasicKeyRequest())
 	}

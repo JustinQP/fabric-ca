@@ -42,6 +42,7 @@ import (
 	cspsigner "github.com/hyperledger/fabric/bccsp/signer"
 	"github.com/hyperledger/fabric/bccsp/utils"
 	"github.com/pkg/errors"
+	"github.com/warm3snow/gmsm/sm2"
 )
 
 // GetDefaultBCCSP returns the default BCCSP
@@ -146,6 +147,13 @@ func getBCCSPKeyOpts(kr csr.KeyRequest, ephemeral bool) (opts bccsp.KeyGenOpts, 
 		default:
 			return nil, errors.Errorf("Invalid ECDSA key size: %d", kr.Size())
 		}
+	case "sm2":
+		switch kr.Size() {
+		case 256:
+			return &bccsp.SM2KeyGenOpts{Temporary: ephemeral}, nil
+		default:
+			return nil, fmt.Errorf("Invalid SM2 key size: %d", kr.Size())
+		}
 	default:
 		return nil, errors.Errorf("Invalid algorithm: %s", kr.Algo())
 	}
@@ -239,6 +247,16 @@ func ImportBCCSPKeyFromPEM(keyFile string, myCSP bccsp.BCCSP, temporary bool) (b
 		return sk, nil
 	case *rsa.PrivateKey:
 		return nil, errors.Errorf("Failed to import RSA key from %s; RSA private key import is not supported", keyFile)
+	case *sm2.PrivateKey:
+		priv, err := utils.PrivateKeyToDER(key.(*sm2.PrivateKey))
+		if err != nil {
+			return nil, fmt.Errorf("Failed to convert SM2 private key from %s: %s", keyFile, err.Error())
+		}
+		sk, err := myCSP.KeyImport(priv, &bccsp.SM2PrivateKeyImportOpts{Temporary: temporary})
+		if err != nil {
+			return nil, fmt.Errorf("Failed to import SM2 private key from %s: %s", keyFile, err.Error())
+		}
+		return sk, nil
 	default:
 		return nil, errors.Errorf("Failed to import key from %s: invalid secret key type", keyFile)
 	}
