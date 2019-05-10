@@ -14,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/sha3"
+	"github.com/warm3snow/gmsm/sm2"
 )
 
 // NewDefaultSecurityLevel returns a new instance of the software-based BCCSP

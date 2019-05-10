@@ -20,8 +20,8 @@ package factory
 import (
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/bccsp/pkcs11"
-	"github.com/pkg/errors"
 	"github.com/hyperledger/fabric/bccsp/sansec"
+	"github.com/pkg/errors"
 )
 
 // FactoryOpts holds configuration information used to initialize factory implementations
@@ -94,7 +94,7 @@ func setFactories(config *FactoryOpts) error {
 		f := &SansecPKCS11Factory{}
 		err := initBCCSP(f, config)
 		if err != nil {
-			factoriesInitError = fmt.Errorf("Failed initializing SansecPKCS11.BCCSP %s\n[%s]", factoriesInitError, err)
+			factoriesInitError = errors.Errorf("Failed initializing SansecPKCS11.BCCSP %s\n[%s]", factoriesInitError, err)
 		}
 	}
 

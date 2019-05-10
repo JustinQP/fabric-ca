@@ -207,11 +207,11 @@ func (ki *x509PublicKeyImportOptsKeyImporter) KeyImport(raw interface{}, opts bc
 		pk := x509Cert.PublicKey
 		switch pk.(type) {
 		case *ecdsa.PublicKey:
-			return ki.bccsp.keyImporters[reflect.TypeOf(&bccsp.ECDSAGoPublicKeyImportOpts{})].KeyImport(
+			return ki.bccsp.KeyImporters[reflect.TypeOf(&bccsp.ECDSAGoPublicKeyImportOpts{})].KeyImport(
 				pk,
 				&bccsp.ECDSAGoPublicKeyImportOpts{Temporary: opts.Ephemeral()})
 		case *rsa.PublicKey:
-			return ki.bccsp.keyImporters[reflect.TypeOf(&bccsp.RSAGoPublicKeyImportOpts{})].KeyImport(
+			return ki.bccsp.KeyImporters[reflect.TypeOf(&bccsp.RSAGoPublicKeyImportOpts{})].KeyImport(
 				pk,
 				&bccsp.RSAGoPublicKeyImportOpts{Temporary: opts.Ephemeral()})
 		default:
@@ -226,7 +226,7 @@ func (ki *x509PublicKeyImportOptsKeyImporter) KeyImport(raw interface{}, opts bc
 
 		switch sm2pk.(type) {
 		case *sm2.PublicKey:
-			return ki.bccsp.keyImporters[reflect.TypeOf(&bccsp.SM2GoPublicKeyImportOpts{})].KeyImport(
+			return ki.bccsp.KeyImporters[reflect.TypeOf(&bccsp.SM2GoPublicKeyImportOpts{})].KeyImport(
 				sm2pk.(*sm2.PublicKey),
 				&bccsp.SM2GoPublicKeyImportOpts{Temporary: opts.Ephemeral()})
 		default:

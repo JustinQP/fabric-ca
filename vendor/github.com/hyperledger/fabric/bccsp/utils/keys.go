@@ -86,7 +86,7 @@ func PrivateKeyToDER(privateKey interface{}) ([]byte, error) {
 // PrivateKeyToPEM converts the private key to PEM format.
 // EC private keys are converted to PKCS#8 format.
 // RSA private keys are converted to PKCS#1 format.
-func PrivateKeyToPEM(privateKey interface{}, pwd []byte) ([]byte, error) {
+func PrivateKeyToPEM(privateKey interface{}, pwd []byte) (pemBytes []byte, err error) {
 	// Validate inputs
 	if privateKey == nil {
 		return nil, errors.New("Invalid key. It must be different from nil.")
@@ -374,7 +374,7 @@ func PublicKeyToPEM(publicKey interface{}, pwd []byte) ([]byte, error) {
 }
 
 // PublicKeyToDER marshals a public key to the der format
-func PublicKeyToDER(publicKey interface{}) ([]byte, error) {
+func PublicKeyToDER(publicKey interface{}) (pemBytes []byte, err error) {
 	if publicKey == nil {
 		return nil, errors.New("Invalid public key. It must be different from nil.")
 	}

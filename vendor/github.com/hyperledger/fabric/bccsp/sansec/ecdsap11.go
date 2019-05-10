@@ -25,7 +25,8 @@ import (
 	"math/big"
 
 	"github.com/warm3snow/pkcs11"
-	"github.com/op/go-logging"
+	//"github.com/op/go-logging"
+	"go.uber.org/zap/zapcore"
 )
 
 // RFC 5480, 2.1.1.1. Named Curve
@@ -199,7 +200,7 @@ func (csp *impl) generateECKey(curve asn1.ObjectIdentifier, ephemeral bool) (ski
 
 	pubGoKey := &ecdsa.PublicKey{nistCurve, x, y}
 
-	if logger.IsEnabledFor(logging.DEBUG) {
+	if logger.IsEnabledFor(zapcore.DebugLevel) {
 		listAttrs(p11lib, session, prv)
 		listAttrs(p11lib, session, pub)
 	}
@@ -336,7 +337,7 @@ func (csp *impl) importECKey(curve asn1.ObjectIdentifier, privKey, ecPt []byte, 
 		return nil, fmt.Errorf("P11: keypair generate failed [%s]\n", err)
 	}
 
-	if logger.IsEnabledFor(logging.DEBUG) {
+	if logger.IsEnabledFor(zapcore.DebugLevel) {
 		listAttrs(p11lib, session, keyHandle)
 	}
 
