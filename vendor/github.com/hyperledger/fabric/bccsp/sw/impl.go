@@ -22,6 +22,7 @@ import (
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/pkg/errors"
+	"github.com/warm3snow/gmsm/sm2"
 )
 
 var (

@@ -26,6 +26,9 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"strings"
+
+	"github.com/warm3snow/gmsm/sm2"
 )
 
 // struct to hold info required for PKCS#8
@@ -66,12 +69,18 @@ func oidFromNamedCurve(curve elliptic.Curve) (asn1.ObjectIdentifier, bool) {
 }
 
 // PrivateKeyToDER marshals a private key to der
-func PrivateKeyToDER(privateKey *ecdsa.PrivateKey) ([]byte, error) {
+func PrivateKeyToDER(privateKey interface{}) ([]byte, error) {
 	if privateKey == nil {
-		return nil, errors.New("Invalid ecdsa private key. It must be different from nil.")
+		return nil, errors.New("Invalid EC private key. It must be different from nil.")
 	}
-
-	return x509.MarshalECPrivateKey(privateKey)
+	switch privateKey.(type) {
+	case *sm2.PrivateKey:
+		return sm2.MarshalSm2PrivateKey(privateKey.(*sm2.PrivateKey), nil)
+	case *ecdsa.PrivateKey:
+		return x509.MarshalECPrivateKey(privateKey.(*ecdsa.PrivateKey))
+	default:
+		return nil, errors.New("Failed to recognize the privateKey")
+	}
 }
 
 // PrivateKeyToPEM converts the private key to PEM format.
@@ -79,15 +88,21 @@ func PrivateKeyToDER(privateKey *ecdsa.PrivateKey) ([]byte, error) {
 // RSA private keys are converted to PKCS#1 format.
 func PrivateKeyToPEM(privateKey interface{}, pwd []byte) ([]byte, error) {
 	// Validate inputs
-	if len(pwd) != 0 {
-		return PrivateKeyToEncryptedPEM(privateKey, pwd)
-	}
 	if privateKey == nil {
 		return nil, errors.New("Invalid key. It must be different from nil.")
 	}
 
 	switch k := privateKey.(type) {
+	case *sm2.PrivateKey:
+		if k == nil {
+			return nil, errors.New("Invalid sm2 private key. It must be different from nil")
+		}
+		return sm2.WritePrivateKeytoMem(k, pwd)
+
 	case *ecdsa.PrivateKey:
+		if len(pwd) != 0 {
+			return PrivateKeyToEncryptedPEM(privateKey, pwd)
+		}
 		if k == nil {
 			return nil, errors.New("Invalid ecdsa private key. It must be different from nil.")
 		}
@@ -143,8 +158,9 @@ func PrivateKeyToPEM(privateKey interface{}, pwd []byte) ([]byte, error) {
 			},
 		), nil
 	default:
-		return nil, errors.New("Invalid key type. It must be *ecdsa.PrivateKey or *rsa.PrivateKey")
+		err = errors.New("Invalid key type. It must be *ecdsa.PrivateKey or *rsa.PrivateKey or *sm2.PrivateKey")
 	}
+	return nil, err
 }
 
 // PrivateKeyToEncryptedPEM converts a private key to an encrypted PEM
@@ -201,8 +217,15 @@ func DERToPrivateKey(der []byte) (key interface{}, err error) {
 	if key, err = x509.ParseECPrivateKey(der); err == nil {
 		return
 	}
+	//sm2
+	if key, err = sm2.ParsePKCS8PrivateKey(der, nil); err == nil {
+		return
+	}
+	if key, err = sm2.ParseSm2PrivateKey(der); err == nil {
+		return
+	}
 
-	return nil, errors.New("Invalid key type. The DER must contain an rsa.PrivateKey or ecdsa.PrivateKey")
+	return nil, errors.New("Invalid key type. The DER must contain an rsa.PrivareKey or ecdsa.PrivateKey or sm2.PrivateKey")
 }
 
 // PEMtoPrivateKey unmarshals a pem to private key
@@ -232,6 +255,11 @@ func PEMtoPrivateKey(raw []byte, pwd []byte) (interface{}, error) {
 			return nil, err
 		}
 		return key, err
+		//check SM2
+	} else if strings.Contains(block.Type, "ENCRYPTED") {
+		if key, err := sm2.ReadPrivateKeyFromMem(raw, pwd); err == nil {
+			return key, nil
+		}
 	}
 
 	cert, err := DERToPrivateKey(block.Bytes)
@@ -296,16 +324,20 @@ func AEStoEncryptedPEM(raw []byte, pwd []byte) ([]byte, error) {
 
 // PublicKeyToPEM marshals a public key to the pem format
 func PublicKeyToPEM(publicKey interface{}, pwd []byte) ([]byte, error) {
-	if len(pwd) != 0 {
-		return PublicKeyToEncryptedPEM(publicKey, pwd)
-	}
-
 	if publicKey == nil {
 		return nil, errors.New("Invalid public key. It must be different from nil.")
 	}
 
 	switch k := publicKey.(type) {
+	case *sm2.PublicKey:
+		//Warning: pwd is no use
+		return sm2.WritePublicKeytoMem(k, pwd)
+
 	case *ecdsa.PublicKey:
+		if len(pwd) != 0 {
+			return PublicKeyToEncryptedPEM(publicKey, pwd)
+		}
+
 		if k == nil {
 			return nil, errors.New("Invalid ecdsa public key. It must be different from nil.")
 		}
@@ -348,6 +380,12 @@ func PublicKeyToDER(publicKey interface{}) ([]byte, error) {
 	}
 
 	switch k := publicKey.(type) {
+	case *sm2.PublicKey:
+		if k == nil {
+			return nil, errors.New("Invalid sm2 public key. It must be different from nil.")
+		}
+		return sm2.MarshalSm2PublicKey(k)
+
 	case *ecdsa.PublicKey:
 		if k == nil {
 			return nil, errors.New("Invalid ecdsa public key. It must be different from nil.")
@@ -371,8 +409,9 @@ func PublicKeyToDER(publicKey interface{}) ([]byte, error) {
 		return PubASN1, nil
 
 	default:
-		return nil, errors.New("Invalid key type. It must be *ecdsa.PublicKey or *rsa.PublicKey")
+		err = errors.New("Invalid key type. It must be *ecdsa.PublicKey or *rsa.PublicKey")
 	}
+	return nil, err
 }
 
 // PublicKeyToEncryptedPEM converts a public key to encrypted pem
@@ -444,7 +483,7 @@ func PEMtoPublicKey(raw []byte, pwd []byte) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return cert, err
+	return cert, nil
 }
 
 // DERToPublicKey unmarshals a der to public key
@@ -454,6 +493,14 @@ func DERToPublicKey(raw []byte) (pub interface{}, err error) {
 	}
 
 	key, err := x509.ParsePKIXPublicKey(raw)
+	if err == nil {
+		return key, nil
+	}
 
-	return key, err
+	key, err = sm2.ParseSm2PublicKey(raw)
+	if err == nil {
+		return key, nil
+	}
+
+	return nil, err
 }

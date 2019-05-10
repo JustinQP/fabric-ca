@@ -16,7 +16,7 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/miekg/pkcs11"
+	"github.com/warm3snow/pkcs11"
 	"go.uber.org/zap/zapcore"
 )
 

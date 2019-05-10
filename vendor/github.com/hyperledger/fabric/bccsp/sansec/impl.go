@@ -53,7 +53,7 @@ func New(opts SansecP11Opts, keyStore bccsp.KeyStore) (bccsp.BCCSP, error) {
 		return nil, fmt.Errorf("Failed initializing configuration [%s]", err)
 	}
 
-	swCSP, err := sw.New(opts.SecLevel, opts.HashFamily, keyStore)
+	swCSP, err := sw.NewWithParams(opts.SecLevel, opts.HashFamily, keyStore)
 	if err != nil {
 		return nil, fmt.Errorf("Failed initializing fallback SW BCCSP [%s]", err)
 	}

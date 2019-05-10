@@ -21,6 +21,7 @@ import (
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/bccsp/pkcs11"
 	"github.com/pkg/errors"
+	"github.com/hyperledger/fabric/bccsp/sansec"
 )
 
 // FactoryOpts holds configuration information used to initialize factory implementations
@@ -29,6 +30,7 @@ type FactoryOpts struct {
 	SwOpts       *SwOpts            `mapstructure:"SW,omitempty" json:"SW,omitempty" yaml:"SwOpts"`
 	PluginOpts   *PluginOpts        `mapstructure:"PLUGIN,omitempty" json:"PLUGIN,omitempty" yaml:"PluginOpts"`
 	Pkcs11Opts   *pkcs11.PKCS11Opts `mapstructure:"PKCS11,omitempty" json:"PKCS11,omitempty" yaml:"PKCS11"`
+	SansecP11Opts *sansec.SansecP11Opts `mapstructure:"SANSECP11,omitempty" json:"SANSECPKCS11,omitempty" yaml:"SANSECPKCS11"`
 }
 
 // InitFactories must be called before using factory interfaces
@@ -86,6 +88,15 @@ func setFactories(config *FactoryOpts) error {
 			factoriesInitError = errors.Wrapf(err, "Failed initializing PKCS11.BCCSP %s", factoriesInitError)
 		}
 	}
+	
+	//SansecPKCS11-based BCCSP
+	if config.SansecP11Opts != nil {
+		f := &SansecPKCS11Factory{}
+		err := initBCCSP(f, config)
+		if err != nil {
+			factoriesInitError = fmt.Errorf("Failed initializing SansecPKCS11.BCCSP %s\n[%s]", factoriesInitError, err)
+		}
+	}
 
 	var ok bool
 	defaultBCCSP, ok = bccspMap[config.ProviderName]
@@ -106,6 +117,8 @@ func GetBCCSPFromOpts(config *FactoryOpts) (bccsp.BCCSP, error) {
 		f = &PKCS11Factory{}
 	case "PLUGIN":
 		f = &PluginFactory{}
+	case "SansecPKCS11":
+		f = &SansecPKCS11Factory{}
 	default:
 		return nil, errors.Errorf("Could not find BCCSP, no '%s' provider", config.ProviderName)
 	}
